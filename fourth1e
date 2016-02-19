@@ -1,0 +1,27 @@
+package helloword;
+
+import javafx.application.Application;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+/**
+ *
+ * @author pearson
+ */
+public class fourth1e extends Application {
+public static void main(String[] args)
+{
+ launch(args);    
+}
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    Group root = new Group();
+    Scene scene = new Scene(root,640,480);
+    primaryStage.setScene(scene);//ohhhh,you forgot again!
+    primaryStage.setTitle("say hi,javaFX");
+    primaryStage.show();
+    }
+}
