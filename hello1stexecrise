@@ -1,0 +1,25 @@
+package helloword;
+
+import javafx.application.Application;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+/**
+ *
+ * @author pearson
+ */
+public class helloexercrise extends Application{
+public static void main(String[] args)//Notice S caps,there is no space.
+{
+    launch(args);
+}
+ @Override   
+public void start(Stage primaryStage) throws Exception {
+     Group root = new Group();
+    Scene scene = new Scene(root,600,400);//scene not scense,2nd Scene SSSSSSS
+    
+    primaryStage.setScene(scene);                    //plzzzzz don't forget me!
+    primaryStage.setTitle("helloPearson");
+    primaryStage.show();  
+    }
