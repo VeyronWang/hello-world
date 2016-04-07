@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package maindisplay;
+package socketserverfx;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -24,90 +24,137 @@ import javafx.scene.control.TextField;
 import socketfx.Constants;
 import socketfx.FxSocketServer;
 import socketfx.SocketListener;
-//import javafx.concurrent
 
 /**
+ * FXML Controller class
  *
- * @author hkrwa
+ * @author jtconnor
  */
 public class FXMLDocumentController implements Initializable {
+
+    @FXML
+    private ListView<String> rcvdMsgsListView;
+    @FXML
+    private ListView<String> sentMsgsListView;
+    @FXML
+    private Button sendButton;
+    @FXML
+    private TextField sendTextField;
+    @FXML
+    private TextField selectedTextField;
+    @FXML
+    private Button connectButton;
+    @FXML
+    private Button disconnectButton;
+    @FXML
+    private TextField portTextField;
+    @FXML
+    private CheckBox autoConnectCheckBox;
+    @FXML
+    private Label connectedLabel;
     
-   @FXML
-   private ListView<String> testList;//
-   @FXML
-   private Button connectButton;
-   @FXML
-   private Button disconnectButton;
-   @FXML
-   private TextField portTextField;
-   @FXML
-   private CheckBox autoConnectCheckBox;
-   @FXML
-   private Label connectedLabel;
-   
-   private final static Logger LOGGER =
+    private final static Logger LOGGER =
             Logger.getLogger(MethodHandles.lookup().lookupClass().getName());
-   
-   private ObservableList<String> testListData;
-   
-   private boolean isConnected;
-   
-   public enum ConnectionDisplayState {
+
+    private ObservableList<String> rcvdMsgsData;
+    private ObservableList<String> sentMsgsData;
+    private ListView lastSelectedListView;
+
+    private boolean isConnected;
+
+    public enum ConnectionDisplayState {
 
         DISCONNECTED, WAITING, CONNECTED, AUTOCONNECTED, AUTOWAITING
     }
-   private FxSocketServer socket;
-   
-   private void connect() {
+
+    private FxSocketServer socket;
+
+    private void connect() {
         socket = new FxSocketServer(new FxSocketListener(),
                 Integer.valueOf(portTextField.getText()),
                 Constants.instance().DEBUG_NONE);
         socket.connect();
     }
-   private void displayState(ConnectionDisplayState state) {
+
+    private void displayState(ConnectionDisplayState state) {
         switch (state) {
             case DISCONNECTED:
                 connectButton.setDisable(false);
                 disconnectButton.setDisable(true);
-                //sendButton.setDisable(true);
-                //sendTextField.setDisable(true);
+                sendButton.setDisable(true);
+                sendTextField.setDisable(true);
                 connectedLabel.setText("Not connected");
                 break;
             case WAITING:
             case AUTOWAITING:
                 connectButton.setDisable(true);
                 disconnectButton.setDisable(true);
-                //sendButton.setDisable(true);
-               // sendTextField.setDisable(true);
+                sendButton.setDisable(true);
+                sendTextField.setDisable(true);
                 connectedLabel.setText("Waiting to connect");
                 break;
             case CONNECTED:
                 connectButton.setDisable(true);
                 disconnectButton.setDisable(false);
-                //sendButton.setDisable(false);
-                //sendTextField.setDisable(false);
+                sendButton.setDisable(false);
+                sendTextField.setDisable(false);
                 connectedLabel.setText("Connected");
                 break;
             case AUTOCONNECTED:
                 connectButton.setDisable(true);
                 disconnectButton.setDisable(true);
-                //sendButton.setDisable(false);
-                //sendTextField.setDisable(false);
+                sendButton.setDisable(false);
+                sendTextField.setDisable(false);
                 connectedLabel.setText("Connected");
                 break;
         }
     }
-   @Override
+
+    /**
+     * Initializes the controller class.
+     *
+     * @param url
+     * @param rb
+     */
+    @Override
     public void initialize(URL url, ResourceBundle rb) {
         isConnected = false;
         displayState(ConnectionDisplayState.DISCONNECTED);
+
+        sentMsgsData = FXCollections.observableArrayList();
+        sentMsgsListView.setItems(sentMsgsData);
+        sentMsgsListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        sentMsgsListView.setOnMouseClicked((Event event) -> {
+            String selectedItem
+                    = sentMsgsListView.getSelectionModel().getSelectedItem();
+            if (selectedItem != null && !selectedItem.equals("null")) {
+                selectedTextField.setText("Sent: " + selectedItem);
+                lastSelectedListView = sentMsgsListView;
+            }
+        });
+
+        rcvdMsgsData = FXCollections.observableArrayList();
+        rcvdMsgsListView.setItems(rcvdMsgsData);
+        rcvdMsgsListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        rcvdMsgsListView.setOnMouseClicked((Event event) -> {
+            String selectedItem
+                    = rcvdMsgsListView.getSelectionModel().getSelectedItem();
+            if (selectedItem != null && !selectedItem.equals("null")) {
+                selectedTextField.setText("Received: " + selectedItem);
+                lastSelectedListView = rcvdMsgsListView;
+            }
+        });
+
+        Runtime.getRuntime().addShutdownHook(new ShutDownThread());
+
+        /*
+         * Uncomment to have autoConnect enabled at startup
+         */
+//        autoConnectCheckBox.setSelected(true);
+//        displayState(ConnectionDisplayState.WAITING);
+//        connect();
     }
-        testListData = FXCollections.observableArrayList();
-        testList.setItems(testListData);
-        //testList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        
-        //Runtime.getRuntime().addShutdownHook(new ShutDownThread());
-    }
+
     class ShutDownThread extends Thread {
 
         @Override
@@ -120,15 +167,16 @@ public class FXMLDocumentController implements Initializable {
             }
         }
     }
+
     class FxSocketListener implements SocketListener {
 
         @Override
         public void onMessage(String line) {
             if (line != null && !line.equals("")) {
-                testListData.add(line);
+                rcvdMsgsData.add(line);
             }
         }
-        
+
         @Override
         public void onClosedStatus(boolean isClosed) {
             if (isClosed) {
@@ -149,10 +197,41 @@ public class FXMLDocumentController implements Initializable {
             }
         }
     }
+
+    @FXML
+    private void handleClearRcvdMsgsButton(ActionEvent event) {
+        rcvdMsgsData.clear();
+        if (lastSelectedListView == rcvdMsgsListView) {
+            selectedTextField.clear();
+        }
+    }
+
+    @FXML
+    private void handleClearSentMsgsButton(ActionEvent event) {
+        sentMsgsData.clear();
+        if (lastSelectedListView == sentMsgsListView) {
+            selectedTextField.clear();
+        }
+    }
+
+    @FXML
+    private void handleSendMessageButton(ActionEvent event) {
+        if (!sendTextField.getText().equals("")) {
+            socket.sendMessage(sendTextField.getText());
+            sentMsgsData.add(sendTextField.getText());
+        }
+    }
+
     @FXML
     private void handleConnectButton(ActionEvent event) {
         displayState(ConnectionDisplayState.WAITING);
         connect();
+    }
+
+    @FXML
+    private void handleDisconnectButton(ActionEvent event) {
+        displayState(ConnectionDisplayState.DISCONNECTED);
+        socket.shutdown();
     }
 
     @FXML
@@ -172,20 +251,5 @@ public class FXMLDocumentController implements Initializable {
             }
         }
     }
-}
- /*
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
-        // TODO
-      simulator1 sim1 = new simulator1();
-      String display1 = sim1.running(); 
-      testText.setText(display1);
-    }    
 
-    @Override
-    public void onClosedStatus(boolean isClosed) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-    
 }
-*/
